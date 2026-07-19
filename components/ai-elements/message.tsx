@@ -109,7 +109,8 @@ export const MessageAction = ({
     return (
       <TooltipProvider>
         <Tooltip>
-          <TooltipTrigger>{button}</TooltipTrigger>
+          {/* render merges trigger props onto Button — avoids nested <button> */}
+          <TooltipTrigger render={button} />
           <TooltipContent>
             <p>{tooltip}</p>
           </TooltipContent>

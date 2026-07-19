@@ -69,9 +69,30 @@ export async function listMessages(
       throw new Error("Message cannot be empty");
     }
   
+    let branchId = conversation.activeBranchId;
+    if (!branchId) {
+      const main = await prisma.branch.findFirst({
+        where: { conversationId, parentBranchId: null },
+        orderBy: { createdAt: "asc" },
+      });
+      if (main) {
+        branchId = main.id;
+      } else {
+        const created = await prisma.branch.create({
+          data: { conversationId, name: "Main" },
+        });
+        branchId = created.id;
+      }
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { activeBranchId: branchId },
+      });
+    }
+
     const message = await prisma.message.create({
       data: {
         conversationId,
+        branchId,
         role: "USER",
         status: "COMPLETE",
         content: trimmed,

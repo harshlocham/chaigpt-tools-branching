@@ -13,10 +13,22 @@ export async function startNewChat(){
     const user = await requireUser();
 
     const conversation = await prisma.conversation.create({
-        data:{
-            userId:user.id,
-            title:"New Chat"
-        }
+        data: {
+            userId: user.id,
+            title: "New Chat",
+            branches: {
+                create: {
+                    name: "Main",
+                },
+            },
+        },
+        include: { branches: true },
+    });
+
+    const mainBranch = conversation.branches[0];
+    await prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { activeBranchId: mainBranch.id },
     });
 
     return conversation.id;

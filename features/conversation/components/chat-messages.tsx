@@ -1,7 +1,8 @@
 "use client";
 
-import { isTextUIPart, type UIMessage } from "ai";
+import { isTextUIPart, isToolUIPart, type UIMessage } from "ai";
 import type { ChatStatus } from "ai";
+import { GitBranchIcon } from "lucide-react";
 
 import {
   Conversation,
@@ -10,28 +11,30 @@ import {
 } from "@/components/ai-elements/conversation";
 import {
   Message,
+  MessageAction,
+  MessageActions,
   MessageContent,
   MessageResponse,
 } from "@/components/ai-elements/message";
 import { Loader } from "@/components/ai-elements/loader";
-
-/** Extracts plain text from a `UIMessage` by joining all text parts. */
-function getMessageText(message: UIMessage) {
-  return message.parts
-    .filter(isTextUIPart)
-    .map((part) => part.text)
-    .join("");
-}
+import { ToolCallCard } from "@/features/ai/components/tool-call-card";
 
 type ChatMessagesProps = {
   messages: UIMessage[];
   status: ChatStatus;
+  onBranchFromMessage?: (messageId: string) => void;
+  isBranching?: boolean;
 };
 
 /**
- * Renders the conversation message list with markdown responses and a loading indicator.
+ * Renders the conversation message list with tool calls, markdown, and branch actions.
  */
-export function ChatMessages({ messages, status }: ChatMessagesProps) {
+export function ChatMessages({
+  messages,
+  status,
+  onBranchFromMessage,
+  isBranching,
+}: ChatMessagesProps) {
   const isWaiting =
     status === "submitted" && messages.at(-1)?.role === "user";
 
@@ -41,8 +44,40 @@ export function ChatMessages({ messages, status }: ChatMessagesProps) {
         {messages.map((message) => (
           <Message key={message.id} from={message.role}>
             <MessageContent>
-              <MessageResponse>{getMessageText(message)}</MessageResponse>
+              {message.parts.map((part, index) => {
+                if (isTextUIPart(part) && part.text) {
+                  return (
+                    <MessageResponse key={`${message.id}-text-${index}`}>
+                      {part.text}
+                    </MessageResponse>
+                  );
+                }
+
+                if (isToolUIPart(part)) {
+                  return (
+                    <ToolCallCard
+                      key={`${message.id}-tool-${part.toolCallId ?? index}`}
+                      part={part}
+                    />
+                  );
+                }
+
+                return null;
+              })}
             </MessageContent>
+
+            {onBranchFromMessage ? (
+              <MessageActions className="opacity-0 transition-opacity group-hover:opacity-100">
+                <MessageAction
+                  tooltip="Branch from here"
+                  label="Branch from here"
+                  disabled={isBranching}
+                  onClick={() => onBranchFromMessage(message.id)}
+                >
+                  <GitBranchIcon className="size-3.5" />
+                </MessageAction>
+              </MessageActions>
+            ) : null}
           </Message>
         ))}
 
@@ -54,7 +89,7 @@ export function ChatMessages({ messages, status }: ChatMessagesProps) {
           </Message>
         ) : null}
       </ConversationContent>
-   
+      <ConversationScrollButton />
     </Conversation>
   );
 }
