@@ -70,7 +70,7 @@ export const ConversationView = ({
     conversations?.find((item) => item.id === conversationId)?.title ?? "Chat";
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <header className="flex h-14 shrink-0 items-center gap-2 border-b px-3">
         <SidebarTrigger />
         <Separator orientation="vertical" className="mx-1 h-4" />
@@ -78,26 +78,30 @@ export const ConversationView = ({
         <BranchSwitcher conversationId={conversationId} />
       </header>
 
-      {messages.length === 0 ? (
-        <ChatEmpty />
-      ) : (
-        <ChatMessages
-          messages={messages}
-          status={status}
-          isBranching={createBranch.isPending}
-          onBranchFromMessage={(messageId) => {
-            createBranch.mutate({ fromMessageId: messageId });
-          }}
-        />
-      )}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {messages.length === 0 ? (
+          <ChatEmpty />
+        ) : (
+          <ChatMessages
+            messages={messages}
+            status={status}
+            isBranching={createBranch.isPending}
+            onBranchFromMessage={(messageId) => {
+              createBranch.mutate({ fromMessageId: messageId });
+            }}
+          />
+        )}
+      </div>
 
-      <ChatComposer
-        onSend={(text) => {
-          void sendMessage({ text });
-        }}
-        isSending={status !== "ready"}
-        autoFocus
-      />
+      <div className="shrink-0">
+        <ChatComposer
+          onSend={(text) => {
+            void sendMessage({ text });
+          }}
+          isSending={status !== "ready"}
+          autoFocus
+        />
+      </div>
     </div>
   );
 };
