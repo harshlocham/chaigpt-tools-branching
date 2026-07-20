@@ -5,11 +5,9 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useQueryClient } from "@tanstack/react-query";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useConversations } from "../hooks/use-conversation";
-import {
-  useCreateBranch,
-} from "../hooks/use-branches";
+import { useCreateBranch } from "../hooks/use-branches";
 import { queryKeys } from "../utils/query-keys";
 import { toast } from "sonner";
 import { ChatEmpty } from "./chat-empty";
@@ -21,6 +19,8 @@ type ConversationViewProps = {
   conversationId: string;
   branchId: string;
   initialMessages: UIMessage[];
+  /** First message from draft chat — sent once after mount (ChatGPT-style create-on-send). */
+  initialPrompt?: string;
 };
 
 /**
@@ -30,10 +30,12 @@ export const ConversationView = ({
   conversationId,
   branchId,
   initialMessages,
+  initialPrompt,
 }: ConversationViewProps) => {
   const queryClient = useQueryClient();
   const { data: conversations } = useConversations();
   const createBranch = useCreateBranch(conversationId);
+  const promptSent = useRef(false);
 
   const transport = useMemo(
     () =>
@@ -65,6 +67,17 @@ export const ConversationView = ({
       toast.error(error.message);
     },
   });
+
+  // Send the draft first message once useChat is ready (ref survives Strict Mode effect re-runs)
+  useEffect(() => {
+    if (!initialPrompt) return;
+    if (promptSent.current) return;
+    if (status !== "ready") return;
+    if (messages.length > 0) return;
+
+    promptSent.current = true;
+    void sendMessage({ text: initialPrompt });
+  }, [initialPrompt, status, messages.length, sendMessage]);
 
   const title =
     conversations?.find((item) => item.id === conversationId)?.title ?? "Chat";

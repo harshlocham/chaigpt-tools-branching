@@ -3,33 +3,39 @@
 import { requireUser } from "@/features/auth/action/require-user";
 import { prisma } from "@/lib/db";
 
+export type StartNewChatResult = {
+  conversationId: string;
+  branchId: string;
+};
 
 /**
- * Server action that creates a new conversation titled "New Chat".
- *
- * @returns The ID of the newly created conversation.
+ * Creates a new conversation with a Main branch.
+ * Call this only when the user actually sends their first message.
  */
-export async function startNewChat(){
-    const user = await requireUser();
+export async function startNewChat(): Promise<StartNewChatResult> {
+  const user = await requireUser();
 
-    const conversation = await prisma.conversation.create({
-        data: {
-            userId: user.id,
-            title: "New Chat",
-            branches: {
-                create: {
-                    name: "Main",
-                },
-            },
+  const conversation = await prisma.conversation.create({
+    data: {
+      userId: user.id,
+      title: "New Chat",
+      branches: {
+        create: {
+          name: "Main",
         },
-        include: { branches: true },
-    });
+      },
+    },
+    include: { branches: true },
+  });
 
-    const mainBranch = conversation.branches[0];
-    await prisma.conversation.update({
-        where: { id: conversation.id },
-        data: { activeBranchId: mainBranch.id },
-    });
+  const mainBranch = conversation.branches[0];
+  await prisma.conversation.update({
+    where: { id: conversation.id },
+    data: { activeBranchId: mainBranch.id },
+  });
 
-    return conversation.id;
+  return {
+    conversationId: conversation.id,
+    branchId: mainBranch.id,
+  };
 }

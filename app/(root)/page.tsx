@@ -1,15 +1,9 @@
-import { startNewChat } from '@/features/home/actions/start-new-chat'
-import { redirect } from 'next/navigation'
-import React from 'react'
+import { DraftChatView } from "@/features/conversation/components/draft-chat-view";
 
 /**
- * Home page — creates a new chat and redirects to `/c/{id}`.
+ * Home page — shows a draft "New Chat" UI.
+ * The conversation is only created in the database when the user sends a message.
  */
-const page = async() => {
-  const conversationId = await startNewChat()
-  
-  
-  redirect(`/c/${conversationId}`)
+export default function Page() {
+  return <DraftChatView />;
 }
-
-export default page
